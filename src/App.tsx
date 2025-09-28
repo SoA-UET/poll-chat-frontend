@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 const HomePage = lazy(() => import("./pages/home"));
 const LoginPage = lazy(() => import("./pages/login"));
 const RegisterPage = lazy(() => import("./pages/register"));
+const ChatPage = lazy(() => import("./pages/chat"));
 
 function App() {
   return <>
@@ -12,6 +13,8 @@ function App() {
           <Route path='/' element={<HomePage />} />
           <Route path='/login' element={<LoginPage />} />
           <Route path='/register' element={<RegisterPage />} />
+          <Route path='/chat' element={<ChatPage />} />
+          <Route path='/chat/:groupId' element={<ChatPage />} />
         </Routes>
     </BrowserRouter>
   </>;

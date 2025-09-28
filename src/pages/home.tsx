@@ -9,6 +9,20 @@ export default function HomePage() {
         
         <div style={{ marginTop: '20px' }}>
             <Link 
+                to="/chat" 
+                style={{ 
+                    marginRight: '15px', 
+                    color: '#6f42c1', 
+                    textDecoration: 'none',
+                    padding: '10px 20px',
+                    border: '1px solid #6f42c1',
+                    borderRadius: '4px',
+                    display: 'inline-block'
+                }}
+            >
+                Chat
+            </Link>
+            <Link 
                 to="/login" 
                 style={{ 
                     marginRight: '15px', 
