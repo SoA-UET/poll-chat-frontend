@@ -5,6 +5,7 @@ const HomePage = lazy(() => import("./pages/home"));
 const LoginPage = lazy(() => import("./pages/login"));
 const RegisterPage = lazy(() => import("./pages/register"));
 const ChatPage = lazy(() => import("./pages/chat"));
+const DiscoverPage = lazy(() => import("./pages/discover"));
 
 function App() {
   return <>
@@ -15,6 +16,7 @@ function App() {
           <Route path='/register' element={<RegisterPage />} />
           <Route path='/chat' element={<ChatPage />} />
           <Route path='/chat/:groupId' element={<ChatPage />} />
+          <Route path='/discover' element={<DiscoverPage />} />
         </Routes>
     </BrowserRouter>
   </>;

@@ -9,6 +9,20 @@ export default function HomePage() {
         
         <div style={{ marginTop: '20px' }}>
             <Link 
+                to="/discover" 
+                style={{ 
+                    marginRight: '15px', 
+                    color: '#17a2b8', 
+                    textDecoration: 'none',
+                    padding: '10px 20px',
+                    border: '1px solid #17a2b8',
+                    borderRadius: '4px',
+                    display: 'inline-block'
+                }}
+            >
+                Discover Groups
+            </Link>
+            <Link 
                 to="/chat" 
                 style={{ 
                     marginRight: '15px', 
