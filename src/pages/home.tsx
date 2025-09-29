@@ -5,14 +5,11 @@ export default function HomePage() {
     const { authenticated, user } = useAuth();
 
     return <>
-        <h1>{"Home Page"}</h1>
+        <h1>{"Poll Chat App"}</h1>
         <div>
-            <p>{"Welcome to the Vite + React 18 + TypeScript template!"}</p>
-            <p>{"It features React Router (BrowserRouter)."}</p>
-
             {authenticated
-                ? <p style={{ color: "green" }}>{`Logged in as ${user.email}`}</p>
-                : <p style={{ color: "red" }}>{"You are not logged in."}</p>
+                ? <p style={{ color: "green" }}>{`Xin chào ${user.fullName} ! Bạn đang đăng nhập với email ${user.email}`}</p>
+                : <p style={{ color: "red" }}>{"Bạn chưa đăng nhập!"}</p>
             }
 
             <div style={{ marginTop: '20px' }}>

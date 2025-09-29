@@ -10,7 +10,7 @@ export type PutUserDto = {
     /**
      * Họ và tên đầy đủ của người dùng
      */
-    full_name: string;
+    fullName: string;
     /**
      * Mật khẩu của người dùng, tối thiểu 8 ký tự.
      */

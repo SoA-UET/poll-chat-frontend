@@ -1,5 +1,7 @@
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { UsersService, type CreateUserDto } from '../api';
 
 interface RegisterFormData {
   fullName: string;
@@ -9,13 +11,14 @@ interface RegisterFormData {
 }
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: '',
     email: '',
     password: '',
     retypePassword: '',
   });
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,6 +66,16 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const { mutate: register, isPending: isLoading } = useMutation({
+    mutationFn: (data: CreateUserDto) => UsersService.usersControllerCreate({
+      requestBody: data,
+    }),
+    onSuccess: () => {
+      alert("Đăng ký tài khoản thành công. Vui lòng đăng nhập để tiếp tục.");
+      navigate('/login');
+    },
+  })
+
   const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -70,49 +83,7 @@ export default function RegisterPage() {
       return;
     }
 
-    setIsLoading(true);
-    
-    try {
-      // TODO: Add your registration logic here
-      console.log('Register form submitted:', formData);
-      
-      // Placeholder callback - replace with your actual registration logic
-      await handleRegister(formData);
-      
-    } catch (error) {
-      console.error('Registration error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Placeholder callback function for registration
-  const handleRegister = async (registerData: RegisterFormData) => {
-    // TODO: Implement your registration logic here
-    // Example: call your API, handle user creation, redirect user, etc.
-    console.log('Placeholder: Register function called with:', registerData);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Example of what you might do:
-    // const response = await fetch('/api/register', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     fullName: registerData.fullName,
-    //     email: registerData.email,
-    //     password: registerData.password,
-    //   }),
-    // });
-    // 
-    // if (response.ok) {
-    //   const userData = await response.json();
-    //   // Auto-login user, redirect to dashboard, show success message, etc.
-    // } else {
-    //   const errorData = await response.json();
-    //   throw new Error(errorData.message || 'Registration failed');
-    // }
+    register(formData);
   };
 
   return (
