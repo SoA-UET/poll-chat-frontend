@@ -10,6 +10,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 export type { CreateGroupDto } from './models/CreateGroupDto';
 export type { CreateUserDto } from './models/CreateUserDto';
 export type { GroupDto } from './models/GroupDto';
+export type { GroupUserDto } from './models/GroupUserDto';
 export type { InternalServerErrorResponseDTO } from './models/InternalServerErrorResponseDTO';
 export type { JwtAuthErrorResponseDTO } from './models/JwtAuthErrorResponseDTO';
 export type { LoggedInUserDto } from './models/LoggedInUserDto';
@@ -17,6 +18,7 @@ export type { LoginUserDto } from './models/LoginUserDto';
 export type { MessageDto } from './models/MessageDto';
 export type { PatchUserDTO } from './models/PatchUserDTO';
 export type { PutUserDto } from './models/PutUserDto';
+export type { SendMessageDto } from './models/SendMessageDto';
 export type { UserDto } from './models/UserDto';
 export type { ValidationErrorResponseDTO } from './models/ValidationErrorResponseDTO';
 

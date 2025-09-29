@@ -4,7 +4,9 @@
 /* eslint-disable */
 import type { CreateGroupDto } from '../models/CreateGroupDto';
 import type { GroupDto } from '../models/GroupDto';
+import type { GroupUserDto } from '../models/GroupUserDto';
 import type { MessageDto } from '../models/MessageDto';
+import type { SendMessageDto } from '../models/SendMessageDto';
 import type { UserDto } from '../models/UserDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -84,14 +86,14 @@ export class GroupsService {
     }
     /**
      * Tham gia nhóm chat.
-     * @returns GroupDto Thành công
+     * @returns GroupUserDto Thành công
      * @throws ApiError
      */
     public static groupsControllerJoinGroup({
         groupId,
     }: {
         groupId: string,
-    }): CancelablePromise<Array<GroupDto>> {
+    }): CancelablePromise<Array<GroupUserDto>> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/groups/{groupId}/members/self',
@@ -172,6 +174,33 @@ export class GroupsService {
             query: {
                 'createdAtAfter': createdAtAfter,
             },
+            errors: {
+                400: `Dữ liệu không hợp lệ - một số thông tin bị thiếu hoặc không đúng định dạng`,
+                401: `Bạn chưa đặt bearer token (JWT) hợp lệ.`,
+                500: `Bug! Hãy báo cáo lỗi này cho quản trị viên trang web.`,
+            },
+        });
+    }
+    /**
+     * Gửi tin nhắn trong nhóm chat.
+     * @returns MessageDto Thành công
+     * @throws ApiError
+     */
+    public static groupsControllerSendMessage({
+        groupId,
+        requestBody,
+    }: {
+        groupId: string,
+        requestBody: SendMessageDto,
+    }): CancelablePromise<MessageDto> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/groups/{groupId}/messages',
+            path: {
+                'groupId': groupId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 400: `Dữ liệu không hợp lệ - một số thông tin bị thiếu hoặc không đúng định dạng`,
                 401: `Bạn chưa đặt bearer token (JWT) hợp lệ.`,

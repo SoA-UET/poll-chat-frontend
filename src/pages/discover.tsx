@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { AuthOnly } from '../components/auth_only';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { GroupsService } from '../api';
 
 // Types
 interface Group {
@@ -22,218 +24,56 @@ export default function DiscoverPage() {
 }
 
 function RealDiscoverPage() {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  // Initialize data on component mount
-  useEffect(() => {
-    handleGetAllGroups();
-  }, []);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const { data: groups, isLoading, refetch: refetchGroups } = useQuery({
+    queryKey: ['groups'],
+    queryFn: () => GroupsService.groupsControllerFindByNameContains({
+      name: searchTerm,
+      membershipOnly: false,
+    }),
+    initialData: [] as Group[],
+  });
+
+  // const { mutate: joinGroup } = useMutation({
+  //   mutationFn: (groupId: string) => GroupsService.groupsControllerJoinGroup({ groupId }),
+  //   onSuccess: (groupUserRelationships) => {
+  //     const groupId = groupUserRelationships[0]?.group_id;
+  //     if (!groupId) {
+  //       throw new Error('No group ID returned from join group mutation??');
+  //     }
+  //     alert('Joined group successfully!');
+  //     navigate(`/chat/${groupId}`);
+  //   }
+  // });
+
+  const { mutate: createGroup } = useMutation({
+    mutationFn: (groupName: string) => GroupsService.groupsControllerCreate({
+      requestBody: {
+        name: groupName,
+      },
+    }),
+
+    onSuccess: (group) => {
+      alert(`Group '${group.name}' created successfully!`);
+      navigate(`/chat/${group.id}`);
+    },
+  });
+
+
 
   // Filter groups based on search term
   useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredGroups(groups);
-    } else {
-      handleSearchAllGroups(searchTerm);
-    }
-  }, [searchTerm, groups]);
+    refetchGroups();
+  }, [searchTerm]);
 
-  // Placeholder callback functions
-  const handleGetAllGroups = async () => {
-    // TODO: Implement your get all groups logic here
-    console.log('Placeholder: Get all groups called');
-    
-    try {
-      setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Example implementation:
-      // const response = await fetch('/api/groups/discover');
-      // if (response.ok) {
-      //   const allGroupsData = await response.json();
-      //   setGroups(allGroupsData);
-      // }
-
-      // Mock data for demonstration
-      const mockGroups: Group[] = [
-        {
-          id: '1',
-          name: 'General Discussion',
-          description: 'A place for general conversations and announcements',
-          memberCount: 156,
-          isPublic: true,
-          isJoined: true,
-          lastActivity: '2 minutes ago',
-          createdBy: 'Admin',
-          tags: ['general', 'discussion'],
-        },
-        {
-          id: '2',
-          name: 'Project Team',
-          description: 'Collaboration space for our main project',
-          memberCount: 12,
-          isPublic: false,
-          isJoined: true,
-          lastActivity: '1 hour ago',
-          createdBy: 'John Doe',
-          tags: ['project', 'work'],
-        },
-        {
-          id: '3',
-          name: 'Random Chat',
-          description: 'Casual conversations and random topics',
-          memberCount: 89,
-          isPublic: true,
-          isJoined: false,
-          lastActivity: '5 hours ago',
-          createdBy: 'Jane Smith',
-          tags: ['casual', 'fun'],
-        },
-        {
-          id: '4',
-          name: 'Tech Discussions',
-          description: 'Share and discuss the latest in technology',
-          memberCount: 234,
-          isPublic: true,
-          isJoined: false,
-          lastActivity: '30 minutes ago',
-          createdBy: 'Tech Guru',
-          tags: ['technology', 'programming'],
-        },
-        {
-          id: '5',
-          name: 'Book Club',
-          description: 'Monthly book discussions and recommendations',
-          memberCount: 67,
-          isPublic: true,
-          isJoined: false,
-          lastActivity: '2 days ago',
-          createdBy: 'BookLover',
-          tags: ['books', 'reading'],
-        },
-        {
-          id: '6',
-          name: 'Gaming Squad',
-          description: 'Connect with fellow gamers and organize game sessions',
-          memberCount: 145,
-          isPublic: true,
-          isJoined: false,
-          lastActivity: '1 hour ago',
-          createdBy: 'GameMaster',
-          tags: ['gaming', 'entertainment'],
-        },
-      ];
-      setGroups(mockGroups);
-      
-    } catch (error) {
-      console.error('Error fetching all groups:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSearchAllGroups = async (searchQuery: string) => {
-    // TODO: Implement your search all groups logic here
-    console.log('Placeholder: Search all groups called with:', searchQuery);
-    
-    // Example implementation:
-    // const response = await fetch(`/api/groups/discover/search?q=${encodeURIComponent(searchQuery)}`);
-    // if (response.ok) {
-    //   const searchResults = await response.json();
-    //   setFilteredGroups(searchResults);
-    // }
-
-    // Mock search functionality
-    const filtered = groups.filter(group =>
-      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-    setFilteredGroups(filtered);
-  };
 
   const handleCreateGroupClick = () => {
-    // TODO: Implement your create group logic here
-    console.log('Placeholder: Create group button clicked');
-    
-    // You might want to:
-    // - Open a modal to create new group
-    // - Navigate to a separate create group page
-    // - Show a form with group details (name, description, privacy settings)
-    
-    alert('Placeholder: Create group functionality - implement your logic here');
-  };
-
-  const handleJoinGroup = async (groupId: string) => {
-    // TODO: Implement your join group logic here
-    console.log('Placeholder: Join group called for group:', groupId);
-    
-    try {
-      // Example implementation:
-      // const response = await fetch(`/api/groups/${groupId}/join`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      // });
-      // 
-      // if (response.ok) {
-      //   // Update group's isJoined status
-      //   setGroups(prev => prev.map(group => 
-      //     group.id === groupId 
-      //       ? { ...group, isJoined: true, memberCount: group.memberCount + 1 }
-      //       : group
-      //   ));
-      // }
-
-      // Mock join functionality
-      setGroups(prev => prev.map(group => 
-        group.id === groupId 
-          ? { ...group, isJoined: true, memberCount: group.memberCount + 1 }
-          : group
-      ));
-      
-      alert(`Joined group successfully! (Mock implementation)`);
-      
-    } catch (error) {
-      console.error('Error joining group:', error);
-    }
-  };
-
-  const handleLeaveGroup = async (groupId: string) => {
-    // TODO: Implement your leave group logic here
-    console.log('Placeholder: Leave group called for group:', groupId);
-    
-    try {
-      // Example implementation:
-      // const response = await fetch(`/api/groups/${groupId}/leave`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      // });
-      // 
-      // if (response.ok) {
-      //   // Update group's isJoined status
-      //   setGroups(prev => prev.map(group => 
-      //     group.id === groupId 
-      //       ? { ...group, isJoined: false, memberCount: group.memberCount - 1 }
-      //       : group
-      //   ));
-      // }
-
-      // Mock leave functionality
-      setGroups(prev => prev.map(group => 
-        group.id === groupId 
-          ? { ...group, isJoined: false, memberCount: Math.max(0, group.memberCount - 1) }
-          : group
-      ));
-      
-      alert(`Left group successfully! (Mock implementation)`);
-      
-    } catch (error) {
-      console.error('Error leaving group:', error);
+    const groupName = window.prompt('Enter group name:');
+    if (groupName) {
+      createGroup(groupName);
     }
   };
 
@@ -347,7 +187,7 @@ function RealDiscoverPage() {
             Loading groups...
           </div>
         </div>
-      ) : filteredGroups.length === 0 ? (
+      ) : groups.length === 0 ? (
         <div style={{ 
           textAlign: 'center', 
           padding: '60px',
@@ -365,7 +205,7 @@ function RealDiscoverPage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
           gap: '20px'
         }}>
-          {filteredGroups.map(group => (
+          {groups.map(group => (
             <div
               key={group.id}
               style={{
@@ -374,7 +214,8 @@ function RealDiscoverPage() {
                 padding: '24px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 transition: 'transform 0.2s, box-shadow 0.2s',
-                border: group.isJoined ? '2px solid #28a745' : '2px solid transparent',
+                // border: group.isJoined ? '2px solid #28a745' : '2px solid transparent',
+                border: '2px solid transparent',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
@@ -396,7 +237,7 @@ function RealDiscoverPage() {
                   }}>
                     {group.name}
                   </h3>
-                  {group.isJoined && (
+                  {/* {group.isJoined && (
                     <span style={{
                       backgroundColor: '#28a745',
                       color: 'white',
@@ -408,7 +249,7 @@ function RealDiscoverPage() {
                     }}>
                       Joined
                     </span>
-                  )}
+                  )} */}
                 </div>
                 <div style={{ 
                   display: 'flex', 
@@ -416,7 +257,7 @@ function RealDiscoverPage() {
                   gap: '15px',
                   marginTop: '8px'
                 }}>
-                  <span style={{ color: '#6c757d', fontSize: '14px' }}>
+                  {/* <span style={{ color: '#6c757d', fontSize: '14px' }}>
                     {group.memberCount} members
                   </span>
                   <span style={{ 
@@ -425,12 +266,12 @@ function RealDiscoverPage() {
                     fontWeight: 'bold'
                   }}>
                     {group.isPublic ? 'Public' : 'Private'}
-                  </span>
+                  </span> */}
                 </div>
               </div>
 
               {/* Group Description */}
-              {group.description && (
+              {/* {group.description && (
                 <p style={{ 
                   color: '#6c757d', 
                   fontSize: '14px', 
@@ -439,10 +280,10 @@ function RealDiscoverPage() {
                 }}>
                   {group.description}
                 </p>
-              )}
+              )} */}
 
               {/* Tags */}
-              {group.tags && group.tags.length > 0 && (
+              {/* {group.tags && group.tags.length > 0 && (
                 <div style={{ marginBottom: '15px' }}>
                   {group.tags.map(tag => (
                     <span
@@ -462,7 +303,7 @@ function RealDiscoverPage() {
                     </span>
                   ))}
                 </div>
-              )}
+              )} */}
 
               {/* Group Footer */}
               <div style={{ 
@@ -472,9 +313,9 @@ function RealDiscoverPage() {
                 paddingTop: '15px',
                 borderTop: '1px solid #e9ecef'
               }}>
-                <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                {/* <div style={{ fontSize: '12px', color: '#6c757d' }}>
                   {group.lastActivity && `Active ${group.lastActivity}`}
-                </div>
+                </div> */}
                 
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <Link
@@ -499,7 +340,7 @@ function RealDiscoverPage() {
                     View
                   </Link>
                   
-                  {group.isJoined ? (
+                  {/* {group.isJoined ? (
                     <button
                       onClick={() => handleLeaveGroup(group.id)}
                       style={{
@@ -545,7 +386,30 @@ function RealDiscoverPage() {
                     >
                       Join
                     </button>
-                  )}
+                  )} */}
+
+                  {/* <button
+                      onClick={() => handleJoinGroup(group.id)}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#218838';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#28a745';
+                      }}
+                    >
+                      Join
+                    </button> */}
                 </div>
               </div>
             </div>

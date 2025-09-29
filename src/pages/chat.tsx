@@ -1,5 +1,8 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, useNavigate } from 'react-router';
+import { GroupsService, UsersService, type UserDto } from '../api';
+import { useAuth } from '../contexts/auth.context';
 
 // Types
 interface Group {
@@ -20,15 +23,128 @@ interface Message {
   isCurrentUser: boolean;
 }
 
+const userCacheById = new Map<string, UserDto>();
+
+async function getUserById(userId: string): Promise<UserDto | null> {
+  if (userCacheById.has(userId)) {
+    return userCacheById.get(userId)!;
+  }
+  
+  try {
+    const user = await UsersService.usersControllerFindById({ id: userId });
+    userCacheById.set(userId, user);
+    return user;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return null;
+  }
+}
+
+async function pollNewMessages(currentUserId: string, groupId: string, createdAtAfter: Date | undefined): Promise<Message[]> {
+  const messages = await GroupsService.groupsControllerGetMessagesInGroup({
+    groupId,
+    createdAtAfter: createdAtAfter ? createdAtAfter.toISOString() : "",
+  });
+
+  return await Promise.all(
+    messages.map(async msg => {
+      return {
+        id: msg.id,
+        groupId: msg.groupId,
+        content: msg.content,
+        senderId: msg.senderId,
+        senderName: (await getUserById(msg.senderId))?.fullName || 'Unknown',
+        timestamp: new Date(msg.createdAt),
+        isCurrentUser: msg.senderId == currentUserId,
+      }
+    })
+  );
+};
+
 export default function ChatPage() {
+  const navigate = useNavigate();
+
+  const { data: groups, isLoading, refetch: refetchGroups } = useQuery({
+    queryKey: ['groups'],
+    queryFn: () => GroupsService.groupsControllerFindByNameContains({
+      name: searchTerm,
+      membershipOnly: false,
+    }),
+    initialData: [] as Group[],
+  });
+
+  const { mutate: joinGroup } = useMutation({
+    mutationFn: (groupId: string) => GroupsService.groupsControllerJoinGroup({ groupId }),
+    onSuccess: (groupUserRelationships) => {
+      const groupId = groupUserRelationships[0]?.group_id;
+      if (!groupId) {
+        throw new Error('No group ID returned from join group mutation??');
+      }
+      alert('Joined group successfully!');
+      navigate(`/chat/${groupId}`);
+    }
+  });
+
+  const { mutate: sendMessage } = useMutation({
+    mutationFn: ({ groupId, content }: { groupId: string, content: string }) => GroupsService.groupsControllerSendMessage({
+      groupId,
+      requestBody: {
+        content,
+      }
+    }),
+  });
+
+
+
+
+
+
+  const { user } = useAuth();
   const { groupId } = useParams<{ groupId: string }>();
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [lastPollTimestamp, setLastPollTimestamp] = useState<Date | null>(null);
+  const [lastGroupId, setLastGroupId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!groupId) return;
+    if (!user) return;
+
+    const groupChanged = lastGroupId !== groupId;
+    if (groupChanged) {
+      setMessages([]);
+      setLastGroupId(groupId);
+    }
+
+    pollNewMessages(user.id, groupId, messages.length > 0 ? messages[messages.length - 1].timestamp : undefined)
+    .then(newMessages => {
+      if (newMessages.length > 0) {
+        if (groupChanged) {
+          setMessages(newMessages);
+        } else {
+          setMessages(prev => [...prev, ...newMessages]);
+        }
+      }
+    })
+    .catch(err => {
+      console.error('Error polling new messages:', err);
+      alert(err?.message);
+      if (err?.status === 403) {
+        confirm("Bạn chưa là thành viên của nhóm này. Bạn có muốn tham gia không?") && joinGroup(groupId);
+      }
+    })
+    .finally(() => {
+      setLastPollTimestamp(new Date());
+    });
+  }, [messages, lastPollTimestamp, groupId, user]);
+
+  // Filter groups based on search term
+  useEffect(() => {
+    refetchGroups();
+  }, [searchTerm]);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -43,7 +159,7 @@ export default function ChatPage() {
   // Load messages when group changes
   useEffect(() => {
     if (groupId) {
-      handleLoadMessages(groupId);
+      (groupId);
     }
   }, [groupId]);
 
@@ -52,131 +168,14 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Filter groups based on search term
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredGroups(groups);
-    } else {
-      handleSearchGroups(searchTerm);
-    }
-  }, [searchTerm, groups]);
-
   // Placeholder callback functions
   const handleSendMessage = async (messageContent: string, targetGroupId: string) => {
-    // TODO: Implement your send message logic here
-    console.log('Placeholder: Send message called with:', { messageContent, targetGroupId });
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Example implementation:
-    // const response = await fetch('/api/messages', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     groupId: targetGroupId,
-    //     content: messageContent,
-    //   }),
-    // });
-    // 
-    // if (response.ok) {
-    //   const newMessage = await response.json();
-    //   handleOnNewMessageArrival(newMessage);
-    // }
-
-    // For demo purposes, add a mock message
-    const mockMessage: Message = {
-      id: Date.now().toString(),
-      groupId: targetGroupId,
-      content: messageContent,
-      senderId: 'current-user',
-      senderName: 'You',
-      timestamp: new Date(),
-      isCurrentUser: true,
-    };
-    handleOnNewMessageArrival(mockMessage);
-  };
-
-  const handleOnNewMessageArrival = (newMessage: Message) => {
-    // TODO: Implement your new message handling logic here
-    console.log('Placeholder: New message arrived:', newMessage);
-    
-    // Example implementation:
-    setMessages(prev => [...prev, newMessage]);
-    
-    // You might also want to:
-    // - Play notification sound
-    // - Update group's last message
-    // - Show desktop notification if tab is not active
-    // - Update unread count
+    sendMessage({ groupId: targetGroupId, content: messageContent });
   };
 
   const handleGetGroupList = async () => {
     // TODO: Implement your get group list logic here
-    console.log('Placeholder: Get group list called');
-    
-    try {
-      setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Example implementation:
-      // const response = await fetch('/api/groups');
-      // if (response.ok) {
-      //   const groupsData = await response.json();
-      //   setGroups(groupsData);
-      // }
-
-      // Mock data for demonstration
-      const mockGroups: Group[] = [
-        {
-          id: '1',
-          name: 'General Discussion',
-          lastMessage: 'Hello everyone!',
-          lastMessageTime: '2 min ago',
-          unreadCount: 3,
-        },
-        {
-          id: '2',
-          name: 'Project Team',
-          lastMessage: 'Meeting at 3 PM',
-          lastMessageTime: '1 hour ago',
-          unreadCount: 0,
-        },
-        {
-          id: '3',
-          name: 'Random Chat',
-          lastMessage: 'Check this out!',
-          lastMessageTime: '1 day ago',
-          unreadCount: 1,
-        },
-      ];
-      setGroups(mockGroups);
-      
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSearchGroups = async (searchQuery: string) => {
-    // TODO: Implement your group search logic here
-    console.log('Placeholder: Search groups called with:', searchQuery);
-    
-    // Example implementation:
-    // const response = await fetch(`/api/groups/search?q=${encodeURIComponent(searchQuery)}`);
-    // if (response.ok) {
-    //   const searchResults = await response.json();
-    //   setFilteredGroups(searchResults);
-    // }
-
-    // Mock search functionality
-    const filtered = groups.filter(group =>
-      group.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredGroups(filtered);
+    refetchGroups();
   };
 
   const handlePlusButtonClick = () => {
@@ -190,55 +189,6 @@ export default function ChatPage() {
     // - Show a dropdown with options
     
     alert('Placeholder: Join/Create group functionality - implement your logic here');
-  };
-
-  const handleLoadMessages = async (targetGroupId: string) => {
-    // TODO: Implement your load messages logic here
-    console.log('Placeholder: Load messages for group:', targetGroupId);
-    
-    try {
-      // Example implementation:
-      // const response = await fetch(`/api/groups/${targetGroupId}/messages`);
-      // if (response.ok) {
-      //   const messagesData = await response.json();
-      //   setMessages(messagesData);
-      // }
-
-      // Mock messages for demonstration
-      const mockMessages: Message[] = [
-        {
-          id: '1',
-          groupId: targetGroupId,
-          content: 'Hey everyone! How are you doing?',
-          senderId: 'user1',
-          senderName: 'Alice Johnson',
-          timestamp: new Date(Date.now() - 3600000),
-          isCurrentUser: false,
-        },
-        {
-          id: '2',
-          groupId: targetGroupId,
-          content: 'I\'m doing great! Just finished my project.',
-          senderId: 'current-user',
-          senderName: 'You',
-          timestamp: new Date(Date.now() - 3000000),
-          isCurrentUser: true,
-        },
-        {
-          id: '3',
-          groupId: targetGroupId,
-          content: 'That\'s awesome! Congratulations! 🎉',
-          senderId: 'user2',
-          senderName: 'Bob Smith',
-          timestamp: new Date(Date.now() - 1800000),
-          isCurrentUser: false,
-        },
-      ];
-      setMessages(mockMessages);
-      
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    }
   };
 
   const handleSubmitMessage = async (e: React.FormEvent) => {
@@ -311,12 +261,12 @@ export default function ChatPage() {
             <div style={{ padding: '20px', textAlign: 'center' }}>
               Loading groups...
             </div>
-          ) : filteredGroups.length === 0 ? (
+          ) : groups.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', color: '#6c757d' }}>
               {searchTerm ? 'No groups found' : 'No groups yet'}
             </div>
           ) : (
-            filteredGroups.map(group => (
+            groups.map(group => (
               <Link
                 key={group.id}
                 to={`/chat/${group.id}`}
@@ -351,7 +301,7 @@ export default function ChatPage() {
                       }}>
                         {group.name}
                       </h4>
-                      {group.lastMessage && (
+                      {/* {group.lastMessage && (
                         <p style={{ 
                           margin: '0', 
                           fontSize: '14px', 
@@ -362,9 +312,9 @@ export default function ChatPage() {
                         }}>
                           {group.lastMessage}
                         </p>
-                      )}
+                      )} */}
                     </div>
-                    <div style={{ marginLeft: '10px', textAlign: 'right' }}>
+                    {/* <div style={{ marginLeft: '10px', textAlign: 'right' }}>
                       {group.lastMessageTime && (
                         <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '5px' }}>
                           {group.lastMessageTime}
@@ -383,7 +333,7 @@ export default function ChatPage() {
                           {group.unreadCount}
                         </div>
                       )}
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </Link>
