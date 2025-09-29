@@ -1,5 +1,6 @@
 import { lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
+import { AuthProvider } from './contexts/auth.context';
 
 const HomePage = lazy(() => import("./pages/home"));
 const LoginPage = lazy(() => import("./pages/login"));
@@ -9,7 +10,8 @@ const DiscoverPage = lazy(() => import("./pages/discover"));
 
 function App() {
   return <>
-    <BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
         <Routes>
           <Route path='/' element={<HomePage />} />
           <Route path='/login' element={<LoginPage />} />
@@ -18,7 +20,8 @@ function App() {
           <Route path='/chat/:groupId' element={<ChatPage />} />
           <Route path='/discover' element={<DiscoverPage />} />
         </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   </>;
 }
 

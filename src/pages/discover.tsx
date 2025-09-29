@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
+import { AuthOnly } from '../components/auth_only';
 
 // Types
 interface Group {
@@ -15,6 +16,12 @@ interface Group {
 }
 
 export default function DiscoverPage() {
+  return <AuthOnly>
+    <RealDiscoverPage />
+  </AuthOnly>;
+}
+
+function RealDiscoverPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
   const [searchTerm, setSearchTerm] = useState('');

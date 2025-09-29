@@ -1,5 +1,8 @@
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { AuthService, type LoginUserDto } from '../api';
+import { useAuth } from '../contexts/auth.context';
 
 interface LoginFormData {
   email: string;
@@ -7,11 +10,25 @@ interface LoginFormData {
 }
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
   });
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { setToken } = useAuth();
+
+  const { mutate: login, isPending: isLoading } = useMutation({
+    mutationFn: (input: LoginUserDto) => AuthService.authControllerLogin({
+      requestBody: input,
+    }),
+    onError: e => alert(e?.message || e?.cause || e?.stack),
+    onSuccess: data => {
+      setToken(data.accessToken);
+      navigate('/');
+    },
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -23,44 +40,7 @@ export default function LoginPage() {
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      // TODO: Add your login logic here
-      console.log('Login form submitted:', formData);
-      
-      // Placeholder callback - replace with your actual login logic
-      await handleLogin(formData);
-      
-    } catch (error) {
-      console.error('Login error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Placeholder callback function for login
-  const handleLogin = async (loginData: LoginFormData) => {
-    // TODO: Implement your login logic here
-    // Example: call your API, handle authentication, redirect user, etc.
-    console.log('Placeholder: Login function called with:', loginData);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Example of what you might do:
-    // const response = await fetch('/api/login', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(loginData),
-    // });
-    // 
-    // if (response.ok) {
-    //   const userData = await response.json();
-    //   // Store token, update auth state, redirect, etc.
-    // } else {
-    //   throw new Error('Login failed');
-    // }
+    login(formData);
   };
 
   return (
