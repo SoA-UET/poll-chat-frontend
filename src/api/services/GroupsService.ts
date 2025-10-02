@@ -154,7 +154,7 @@ export class GroupsService {
         });
     }
     /**
-     * Lấy danh sách tin nhắn trong nhóm chat.
+     * Lấy danh sách tin nhắn trong nhóm chat. HTTP long-polling in effect!
      * @returns MessageDto Thành công
      * @throws ApiError
      */

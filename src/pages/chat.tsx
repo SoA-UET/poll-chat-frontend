@@ -43,7 +43,7 @@ async function getUserById(userId: string): Promise<UserDto | null> {
 async function pollNewMessages(currentUserId: string, groupId: string, createdAtAfter: Date | undefined): Promise<Message[]> {
   const messages = await GroupsService.groupsControllerGetMessagesInGroup({
     groupId,
-    createdAtAfter: createdAtAfter ? createdAtAfter.toISOString() : "",
+    createdAtAfter: createdAtAfter ? createdAtAfter.toISOString() : new Date(0).toISOString(),
   });
 
   return await Promise.all(
@@ -125,15 +125,25 @@ export default function ChatPage() {
         if (groupChanged) {
           setMessages(newMessages);
         } else {
-          setMessages(prev => [...prev, ...newMessages]);
+          setMessages(prev => {
+            const list = [...prev];
+            const existingMessageIds = new Set(list.map(m => m.id));
+            newMessages.forEach(m => {
+              if (!existingMessageIds.has(m.id)) {
+                list.push(m);
+              }
+            });
+            return list;
+          });
         }
       }
     })
     .catch(err => {
       console.error('Error polling new messages:', err);
-      alert(err?.message);
       if (err?.status === 403) {
         confirm("Bạn chưa là thành viên của nhóm này. Bạn có muốn tham gia không?") && joinGroup(groupId);
+      } else {
+        alert(`Lỗi: ${err?.message || err?.cause || err?.stack || err}`);
       }
     })
     .finally(() => {
@@ -179,16 +189,7 @@ export default function ChatPage() {
   };
 
   const handlePlusButtonClick = () => {
-    // TODO: Implement your join/create group logic here
-    console.log('Placeholder: Plus button clicked');
-    
-    // You might want to:
-    // - Open a modal to create new group
-    // - Open a modal to join existing group by code/link
-    // - Navigate to a separate page for group management
-    // - Show a dropdown with options
-    
-    alert('Placeholder: Join/Create group functionality - implement your logic here');
+    navigate('/discover');
   };
 
   const handleSubmitMessage = async (e: React.FormEvent) => {

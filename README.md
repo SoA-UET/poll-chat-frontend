@@ -1,4 +1,6 @@
-# Vite + React 18 + TypeScript Frontend Template
+# Poll Chat Frontend
+
+Backend: <https://github.com/SoA-UET/poll-chat-backend>
 
 ## Setup
 
